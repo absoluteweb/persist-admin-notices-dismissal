@@ -108,10 +108,12 @@ if ( ! class_exists( 'PAnD' ) ) {
 			$option_name        = isset( $_POST['option_name'] ) ? sanitize_text_field( wp_unslash( $_POST['option_name'] ) ) : '';
 			$dismissible_length = isset( $_POST['dismissible_length'] ) ? sanitize_text_field( wp_unslash( $_POST['dismissible_length'] ) ) : 0;
 
-			if ( 'forever' !== $dismissible_length ) {
+			if ( 'forever' !== $dismissible_length && 'session' !== $dismissible_length ) {
 				// If $dismissible_length is not an integer default to 1.
 				$dismissible_length = ( 0 === absint( $dismissible_length ) ) ? 1 : $dismissible_length;
 				$dismissible_length = strtotime( absint( $dismissible_length ) . ' days' );
+			} elseif ( 'session' === $dismissible_length ) {
+				$dismissible_length = wp_get_session_token();
 			}
 
 			check_ajax_referer( 'dismissible-notice', 'nonce' );
@@ -134,6 +136,12 @@ if ( ! class_exists( 'PAnD' ) ) {
 
 			if ( 'forever' === $db_record ) {
 				return false;
+			} elseif ( 'session' === $length ) {
+				if( wp_get_session_token() === $db_record ) {
+					return false;
+				} else {
+					return true;
+				}
 			} elseif ( absint( $db_record ) >= time() ) {
 				return false;
 			} else {
@@ -158,7 +166,7 @@ if ( ! class_exists( 'PAnD' ) ) {
 			$timeout   = get_site_option( $cache_key );
 			$timeout   = 'forever' === $timeout ? time() + 60 : $timeout;
 
-			if ( empty( $timeout ) || time() > $timeout ) {
+			if ( empty( $timeout ) /*|| time() > $timeout*/ ) {
 				return false;
 			}
 
